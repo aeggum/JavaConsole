@@ -83,10 +83,7 @@ class Console(object):
         finally:
             Util.clean_up()
             if save_output == True:
-                directory = '/tmp/javaconsole/%s' % int(time.time())
-                if not os.path.exists(directory):
-                    os.makedirs(directory)
-                    shutil.copyfile(MAIN_FILE, directory + '/main.java')
+                save_output(self)
 
             print 'Cya'
           
@@ -102,6 +99,10 @@ class Console(object):
 
             if user_input.find("clear") != -1:
                 self.main_input = []
+                continue
+            
+            if user_input.find("--save") != -1:
+                self.save_output()
                 continue
 
             if user_input.find('exit') != -1:
@@ -217,6 +218,11 @@ class Console(object):
             if m.find("(") != -1:
                 self.method_names.append(m[:m.find("(")])
 
+    def save_output(self):
+        directory = '/tmp/javaconsole/%s' % int(time.time())
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+            shutil.copyfile(MAIN_FILE, directory + '/main.java')
 
 
 print_help = False

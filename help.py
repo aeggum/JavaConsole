@@ -17,5 +17,6 @@ your environment."
 
 -s (--save) 	Save the contents of the Java you've created on exit.
 		The contents will be saved in the /tmp/javaconsole/ directory, which will be created if it doesn't exist.  
-		To prevent overwriting the file repeatedly, the console contents are further separted by timestamp.  Use 'ls -lthr to sort'
+		To prevent overwriting the file repeatedly, the console contents are further separted by timestamp.  Use 'ls -lthr' to sort.
+		Alternatively, at any point during when working with the console, you may input '--save'.   This will save the current state.
 """

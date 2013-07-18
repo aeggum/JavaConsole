@@ -16,6 +16,7 @@ CLASS_KEYWORDS = 'class'
 ACCESS_MODIFIERS = ['public', 'private', 'protected']
 START_FILE = 'start.java'
 MAIN_FILE = 'main.java'
+INVALID_CLASS_ERROR = "invalidClassDeclaration"
 
 class Console(object):
 
@@ -24,6 +25,9 @@ class Console(object):
         self.imports = []
         self.methods = []
         self.method_names = []  # currently serves no purpose
+        self.classes = []
+        self.class_names = []
+        self.full_class_names = []
 
     def run(self):
         '''
@@ -44,7 +48,7 @@ class Console(object):
         
         # Attempt to compile the new change
         try:
-            Util.compile_java([MAIN_FILE])
+            Util.compile_java(self.full_class_names)
         except Exception as e:
             if verbose_output == True:
                 print 'Exception: %s' % e
@@ -58,7 +62,10 @@ class Console(object):
                 self.methods.pop()
                 self.method_names.pop()
             elif is_class is True:
-                print 'classes not yet supported'
+                self.classes.pop()
+                self.class_names.pop()
+                filename = self.full_class_names.pop()
+                self._remove_file(filename)
 
             return
 
@@ -70,18 +77,19 @@ class Console(object):
         The 'main' method for the Java Console application.
         '''
         shutil.copyfile(START_FILE, MAIN_FILE)
+        self.full_class_names.append(MAIN_FILE)
         print "Java Console: run Java with no setup required."
         
         try: 
             while True:
-                Util.clean_up()
+                Util.clean_up(self.full_class_names)
                 self.general_input()
         except KeyboardInterrupt:
             print ''
         except Exception as e:
             print e     # for debugging
         finally:
-            Util.clean_up()
+            Util.clean_up(self.full_class_names)
             if save_output == True:
                 save_output(self)
 
@@ -130,7 +138,7 @@ class Console(object):
         unclosed = True
         user_input = method_declaration
         self.extract_method_name(method_declaration)
-        while user_input.find("{") != -1 and unclosed == True:
+        while unclosed == True:
             new_input = raw_input("..... ")
             user_input += new_input
             if new_input.find("}") != -1:
@@ -141,7 +149,24 @@ class Console(object):
 
 
     def handle_class(self, class_declaration):
-        print 'handling classes is not yet supported'    
+        openers = 1
+        user_input = class_declaration
+        try:
+            self.extract_class_name(class_declaration)
+            while openers > 0:
+                new_input = raw_input("..... ")
+                user_input += new_input
+                if new_input.find("{") != -1:
+                    openers += 1
+                if new_input.find("}") != -1:
+                    openers -= 1
+            self.classes.append(user_input)
+            self.create_class()
+            self.build(is_class=True)
+        
+        except Exception as e:
+            if str(e) == INVALID_CLASS_ERROR:
+                print "extending or implementing other classes or interfaces is not supported"
         
        
     def parse_file(self, java_file):
@@ -218,11 +243,45 @@ class Console(object):
             if m.find("(") != -1:
                 self.method_names.append(m[:m.find("(")])
 
+    def extract_class_name(self, class_declaration):
+        if class_declaration.find("implements") != -1 or \
+                    class_declaration.find("extends") != -1:
+            raise Exception(INVALID_CLASS_ERROR)
+        class_name = class_declaration.split(" ")[-2]
+        
+        # If the class was previously added, remove all references to it
+        if self.class_names.count(class_name) != 0:
+            index = self.class_names.index(class_name)
+            del self.class_names[index]
+            del self.classes[index]
+            del self.full_class_names[index]
+        
+        self.class_names.append(class_name)
+        
+    def create_class(self):
+        '''
+        Create a new file using the class name, and then copy the class
+        contents into the new file.
+        '''
+        filename = "%s.%s" % (self.class_names[-1], 'java')
+        self._remove_file(filename)
+        
+        self.full_class_names.append(filename)
+        file = open(filename, 'w+')
+        for line in self.classes:
+            file.write(line)
+        file.close()
+        
+
     def save_output(self):
         directory = '/tmp/javaconsole/%s' % int(time.time())
         if not os.path.exists(directory):
             os.makedirs(directory)
             shutil.copyfile(MAIN_FILE, directory + '/main.java')
+            
+    def _remove_file(self, filename):
+        if os.path.exists(filename):
+            os.remove(filename)
 
 
 print_help = False

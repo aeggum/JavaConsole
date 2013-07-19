@@ -6,6 +6,8 @@ import fnmatch
 import sys
 import os
 import time
+
+from datetime import datetime
 from tempfile import mkstemp
 from shutil import move
 from os import remove, close
@@ -65,7 +67,7 @@ class Console(object):
                 self.classes.pop()
                 self.class_names.pop()
                 filename = self.full_class_names.pop()
-                self._remove_file(filename)
+                Util.remove_file(filename)
 
             return
 
@@ -78,7 +80,7 @@ class Console(object):
         '''
         shutil.copyfile(START_FILE, MAIN_FILE)
         self.full_class_names.append(MAIN_FILE)
-        print "Java Console: run Java with no setup required."
+        print "JavaConsole: %s" % str(datetime.now().strftime("%b %d, %G"))
         
         try: 
             while True:
@@ -91,7 +93,7 @@ class Console(object):
         finally:
             Util.clean_up(self.full_class_names)
             if save_output == True:
-                save_output(self)
+                self.save_output()
 
             print 'Cya'
           
@@ -264,7 +266,7 @@ class Console(object):
         contents into the new file.
         '''
         filename = "%s.%s" % (self.class_names[-1], 'java')
-        self._remove_file(filename)
+        Util.remove_file(filename)
         
         self.full_class_names.append(filename)
         file = open(filename, 'w+')
@@ -278,27 +280,38 @@ class Console(object):
         if not os.path.exists(directory):
             os.makedirs(directory)
             shutil.copyfile(MAIN_FILE, directory + '/main.java')
-            
-    def _remove_file(self, filename):
-        if os.path.exists(filename):
-            os.remove(filename)
+                    
 
+def __parse_arg(arg):
+    if '-h' == arg or '--help' == arg:
+        return 'help'
+    if '-v' == arg or '--verbose' == arg:
+        return 'verbose'
+    if '-s' == arg or '--save' == arg:
+        return 'save'
 
 print_help = False
 verbose_output = False
 save_output = False
+help_arg = None
 
 for arg in sys.argv:
-    if '-h' == arg or '--help' == arg:
+    index = sys.argv.index(arg)
+    option = __parse_arg(arg)
+    if option is 'help':
         print_help = True
-    if '-v' == arg or '--verbose' == arg:
+        try:
+            help_arg = __parse_arg(sys.argv[index+1])
+        except Exception:
+            help_arg = None
+
+    if option is 'verbose':
         verbose_output = True
-    if '-s' == arg or '--save' == arg:
+    if option is 'save':
         save_output = True
 
-
 if print_help == True:
-    Help.print_help()
+    Help.print_help(help_arg)
 else:
     # Execute the Console program
     console = Console()

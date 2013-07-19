@@ -17,6 +17,11 @@ class Util(object):
             os.remove(f)
         
         for filename in filenames:
+            Util.remove_file(filename)
+
+    @staticmethod
+    def remove_file(filename):
+        if os.path.exists(filename):
             os.remove(filename)
     
     @staticmethod

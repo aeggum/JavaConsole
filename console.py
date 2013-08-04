@@ -50,7 +50,7 @@ class Console(object):
         
         # Attempt to compile the new change
         try:
-            Util.compile_java(self.full_class_names)
+            Util.compile_java([MAIN_FILE] + self.full_class_names)
         except Exception as e:
             if verbose_output == True:
                 print 'Exception: %s' % e
@@ -79,8 +79,7 @@ class Console(object):
         The 'main' method for the Java Console application.
         '''
         shutil.copyfile(START_FILE, MAIN_FILE)
-        self.full_class_names.append(MAIN_FILE)
-        print "JavaConsole: %s" % str(datetime.now().strftime("%b %d, %G"))
+        print "JavaConsole: %s" % str(datetime.now().strftime("%b %d, %Y"))
         
         try: 
             while True:
@@ -113,6 +112,10 @@ class Console(object):
             
             if user_input.find("--save") != -1:
                 self.save_output()
+                continue
+
+            if user_input.find("--verbose") != -1:
+                verbose_output = True
                 continue
 
             if user_input.find('exit') != -1:
@@ -270,17 +273,24 @@ class Console(object):
         
         self.full_class_names.append(filename)
         file = open(filename, 'w+')
-        for line in self.classes:
-            file.write(line)
+        file.write(self.classes[-1])
         file.close()
         
 
     def save_output(self):
-        directory = '/tmp/javaconsole/%s' % int(time.time())
+        directory = '/tmp/javaconsole/%s' % datetime.now().strftime("%Y-%d-%m_%H.%M.%S")
         if not os.path.exists(directory):
             os.makedirs(directory)
+
+            if os.path.exists(MAIN_FILE) is not True:
+                shutil.copyfile(START_FILE, MAIN_FILE)
+                self.parse_file(MAIN_FILE)
+
             shutil.copyfile(MAIN_FILE, directory + '/main.java')
-                    
+            for class_name in self.full_class_names:
+                shutil.copyfile(Util.pretty_class(class_name), directory + '/%s' % class_name)
+
+
 
 def __parse_arg(arg):
     if '-h' == arg or '--help' == arg:
@@ -316,3 +326,4 @@ else:
     # Execute the Console program
     console = Console()
     console.console()
+    

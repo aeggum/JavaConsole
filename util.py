@@ -5,6 +5,11 @@ import subprocess
 import os
 import sys
 
+from tempfile import mkstemp
+from shutil import move
+
+TMP_FILE = "temp.java"
+
 class Util(object):
     
     @staticmethod
@@ -55,3 +60,33 @@ class Util(object):
                 sys.stdout.write(line)
 
         return produces_output
+
+    @staticmethod
+    def pretty_class(java_file):
+        '''Puts each statement onto a new line, to be used for saving output'''
+        f = open(java_file)
+        fh, abs_path = mkstemp()
+        temp_file = open(abs_path, 'w')
+        for line in Util.disassemble_class(f.read()):
+            temp_file.write(line)
+            temp_file.write("\n")
+
+        f.close()
+        temp_file.close()
+        return abs_path
+
+    @staticmethod
+    def disassemble_class(class_text):
+        '''
+        Converts the class string into an array of lines 
+        that make up the method.  Used simply to make the 
+        Java file look prettier for saving.
+        '''
+        eol_chars = ['{', ';', ':', '}']
+        lines = []
+        last_eol = 0
+        for i, c in enumerate(class_text):
+            if c in eol_chars:
+                lines.append(class_text[last_eol:i+1])
+                last_eol = i + 1
+        return lines
